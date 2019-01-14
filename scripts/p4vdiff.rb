@@ -1,5 +1,8 @@
 require 'tty-prompt'
 prompt = TTY::Prompt.new
+require 'tty-spinner'
+spinner = TTY::Spinner.new
+require 'tty-progressbar'
 
 trap("SIGINT") { throw :ctrl_c }
 
@@ -14,11 +17,14 @@ catch :ctrl_c do
         raise 'Empty string passed' if changeListNum.empty?
         raise 'Change # not a number' if changeListNum =~ /\D/
 
+        spinner.auto_spin
         output=`p4 describe #{changeListNum}`
         puts "#{output}"
+        spinner.stop("Done")
 
         filenames=output.scan(/\.\.\. (.*#[0-9]+) .*/).flatten
         downloaded_filenames = Hash.new
+        spinner.auto_spin
         filenames.each do |filename|
             escape_filename=filename.gsub(/\//,
                                           '')
@@ -31,6 +37,7 @@ catch :ctrl_c do
             downloaded_filenames[filename] = tuple.new("#{@tmpdir}/#{changeListNum}/#{escape_filename}",
                                                        "#{@tmpdir}/#{changeListNum}/.#{escape_filename}")
         end
+        spinner.stop("Done")
 
         diffAll = prompt.yes?("Diff all? (#{downloaded_filenames.length} files)")
 
@@ -50,12 +57,10 @@ catch :ctrl_c do
             end
         end
 
-        i = 0
-        puts "#{i} / #{chosen_paths.length}"
+        bar = TTY::ProgressBar.new('Diffs [:bar] :percent', total:chosen_paths.length)
         chosen_paths.each do |value|
             system("vimdiff value._1 value._2")
-            i += 1
-            puts "#{i} / #{chosen_paths.length}"
+            bar.advance(1)
         end
 
     rescue Exception
