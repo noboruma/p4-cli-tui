@@ -1,4 +1,3 @@
-#!/usr/bin/ruby
 require 'tty-prompt'
 prompt = TTY::Prompt.new
 
@@ -49,3 +48,17 @@ catch :ctrl_c do
             choices.each do |choice|
                 chosen_paths.append downloaded_filenames[choice]
             end
+        end
+
+        i = 0
+        puts "#{i} / #{chosen_paths.length}"
+        chosen_paths.each do |value|
+            system("vimdiff value._1 value._2")
+            i += 1
+            puts "#{i} / #{chosen_paths.length}"
+        end
+
+    rescue Exception
+        puts "Stop"
+    end
+end
