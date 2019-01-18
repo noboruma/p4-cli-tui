@@ -3,14 +3,19 @@ prompt = TTY::Prompt.new
 require 'tty-spinner'
 spinner = TTY::Spinner.new
 require 'tty-progressbar'
+require 'tty-reader'
+reader = TTY::Reader.new
 
 trap("SIGINT") { throw :ctrl_c }
 
 tuple = Struct.new(:_1, :_2)
 @tmpdir = "/tmp/p4v"
-`mkdir -p #{@tmpdir}/#{changeListNum}`
 
 catch :ctrl_c do
+    reader.on(:keyescape) do
+        puts "Exiting..."
+        exit
+    end
     begin
         print "Diff changelist#: "
         changeListNum = gets.chomp;
@@ -18,12 +23,13 @@ catch :ctrl_c do
         raise 'Change # not a number' if changeListNum =~ /\D/
 
         spinner.auto_spin
+        `mkdir -p #{@tmpdir}/#{changeListNum}`
         output=`p4 describe #{changeListNum}`
         puts "#{output}"
         spinner.stop("Done")
 
         filenames=output.scan(/\.\.\. (.*#[0-9]+) .*/).flatten
-        downloaded_filenames = Hash.new
+                                       downloaded_filenames = Hash.new
         spinner.auto_spin
         filenames.each do |filename|
             escape_filename=filename.gsub(/\//,
