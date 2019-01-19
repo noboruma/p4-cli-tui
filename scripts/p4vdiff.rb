@@ -12,10 +12,6 @@ tuple = Struct.new(:_1, :_2)
 @tmpdir = "/tmp/p4v"
 
 catch :ctrl_c do
-    reader.on(:keyescape) do
-        puts "Exiting..."
-        exit
-    end
     begin
         print "Diff changelist#: "
         changeListNum = gets.chomp;
@@ -24,7 +20,8 @@ catch :ctrl_c do
 
         spinner.auto_spin
         `mkdir -p #{@tmpdir}/#{changeListNum}`
-        output=`p4 describe #{changeListNum}`
+        output=`cat /tmp/desc`
+        #output=`p4 describe #{changeListNum}`
         puts "#{output}"
         spinner.stop("Done")
 
