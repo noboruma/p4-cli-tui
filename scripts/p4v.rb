@@ -3,7 +3,9 @@ prompt = TTY::Prompt.new
 require 'tty-reader'
 reader = TTY::Reader.new
 require 'tty-spinner'
+require 'colorize'
 
+@user   = ""
 @tmpdir = "/tmp/p4v"
 
 require './p4desc.rb'
@@ -25,15 +27,14 @@ def open_description(changenum, prompt, reader)
 end
 
 def getChangeList(user)
-    RAW=`p4 changes -u #{user} -s pending`
-    OUTPUT=`echo #{RAW} | sort - | sed 's/by #{user}@#{user}\./at [/g' | sed 's/ \*pending\* /] /g' | GREP_COLOR='01;33' grep --color=always "\[.*\]" | GREP_COLOR='01;32' grep --color=always " [0-9]* " | GREP_COLOR='01;31' grep --color=always "'.*'$" | column -ts\'`
-    COLOR_LINES=`echo #{OUTPUT} | wc -l`
-    RAW_LINES=`echo #{RAW} | wc -l`
-
-    if COLOR_LINES != RAW_LINES
-        raise "poised coloring"
-    end
-    return OUTPUT
+    raw=`p4 changes -u #{user} -s pending | sort -`
+    colour=raw.gsub(/by #{user}@#{user}\./,"at [")
+    colour=colour.gsub(/ \*pending\* /,"] ")
+    colour=colour.gsub(/\[.*\]/) {|match| match.red}
+    colour=colour.gsub(/ [0-9]* /) {|match| match.cyan}
+    colour=colour.gsub(/'.*'/) {|match| match.yellow}
+    #colour=`echo "#{colour}" | column -ts\'`
+    return colour, raw
 end
 
 trap("SIGINT") { throw :ctrl_c }
@@ -42,18 +43,17 @@ trap("SIGINT") { throw :ctrl_c }
 while true
     spinner = TTY::Spinner.new("[:spinner] Getting list...", format: :pulse_2)
     spinner.auto_spin
-    output=getChangeList("")
-    puts output
+    coloutput, output=getChangeList @user
     changes=output.scan(/Change ([0-9]+) /)
     spinner.stop("#{changes.length} changes")
+    puts coloutput
 
     choice = prompt.select("Changelist #") do |menu|
         changes.each do |value|
             menu.choice name: value[0], value: value
         end
     end
-
-    open_description choice, prompt, reader
+    open_description choice[0], prompt, reader
 end
 #rescue Exception
 #   puts "Stop"
