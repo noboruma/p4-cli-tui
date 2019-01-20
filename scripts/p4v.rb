@@ -8,7 +8,7 @@ require 'colorize'
 @user   = ""
 @tmpdir = "/tmp/p4v"
 
-require './p4desc.rb'
+require "#{File.dirname(__FILE__)}/p4desc"
 
 # Modes:
 # :changelist_viewer -> changelists viewer
