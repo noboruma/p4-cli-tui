@@ -31,6 +31,9 @@ def p4diff(downloaded_filenames, prompt)
     end
   else
     choices = prompt.multi_select("Choose between:") do |menu|
+      if downloaded_filenames.length == 1
+        menu.default 1
+      end
       downloaded_filenames.each do |key, value|
         menu.choice key
       end
@@ -41,9 +44,33 @@ def p4diff(downloaded_filenames, prompt)
   end
   bar = TTY::ProgressBar.new('Diffs [:bar] :percent', total:chosen_paths.length)
   chosen_paths.each do |value|
-    system("vimdiff #{value._1} #{value._2}")
+    system("gvimdiff #{value._1} #{value._2} 1>/dev/null")
     bar.advance(1)
   end
+end
+
+def p4open(filenames, prompt)
+  openAll = prompt.yes?("Open all? (#{filenames.length} files)")
+  chosen_paths = []
+  if openAll
+    filenames.each do |value|
+        chosen_paths.push value
+    end
+  else
+    choices = prompt.multi_select("Choose between:") do |menu|
+      if filenames.length == 1
+        menu.default 1
+      end
+      filenames.each do |value|
+        menu.choice value
+      end
+    end
+    choices.each do |choice|
+        chosen_paths.push choice
+    end
+  end
+  system("gvim #{chosen_paths.join(' ')} 1>/dev/null &")
+  return chosen_paths.length
 end
 
 def getChangeDesc(changenum)
@@ -60,43 +87,115 @@ def getChangeDesc(changenum)
     return colour, raw
 end
 
-def p4desc(changenum, prompt, reader)
-  #catch :ctrl_c do begin
-  while true
-    spinner = TTY::Spinner.new("[:spinner] Getting desc...", format: :pulse_2)
-    spinner.auto_spin()
-    raise 'Empty string passed' if changenum.empty?
-    raise 'Change # not a number' if changenum =~ /\D/
-    `mkdir -p #{@tmpdir}/#{changenum}`
-    coloutput, output = getChangeDesc(changenum)
-    spinner.stop("done!")
-    puts "#{coloutput}"
+def changeFileChangelist(changenum, root, prompt)
+  raw=`cd #{root} && p4 opened`
+  rawlines=raw.scan(/^.*$/)
+  lines = []
+  rawlines.each do |line|
+    if line =~ /^((?!#{changenum}).)*$/
+       lines.push line
+    end
+  end
+  choices = prompt.multi_select("Files to take:", per_page: 15) do |menu|
+    if lines.length == 1
+      menu.default 1
+    end
+    lines.each do |line|
+      filename=line.scan(/(.*)#[0-9]+ -/)
+      menu.choice name:line, value:filename[0]
+    end
+  end
+  choices.each do |file|
+    `cd #{root} && p4 reopen -c #{changenum} #{file[0]}`
+  end
+  return choices.length
+end
 
+def workspaceActions(changenum, root, prompt)
     choices = [
-      { key: 'd', name: 'show diffs', value: :diff },
-      { key: 'S', name: 'submit changelist', value: :submit },
-      { key: 'e', name: 'edit changelist', value: :edit },
-      { key: 'q', name: 'quit', value: :quit }
+        { key: 'e', name: 'edit files', value: :edit },
+        { key: 'a', name: 'add files', value: :add},
+        { key: 's', name: 'shelve files', value: :shelve},
+        { key: 'd', name: 'show diffs', value: :diff },
+        { key: 'D', name: 'delete shelved files', value: :deleteshelved},
+        { key: 'E', name: 'edit changelist', value: :editchange },
+        { key: 'S', name: 'submit changelist', value: :submit },
+        { key: '!', name: 'execute', value: :shebang},
+        { key: 'q', name: 'quit', value: :quit }
     ]
 
     action = prompt.expand('Action?', choices)
     case action
-    when :submit
-      `p4 submit #{changenum}`
     when :edit
-      `p4 edit #{changenum}`
+        raw=`cd #{root} && p4 opened -c #{changenum}`
+        filenames=raw.scan(/(.*)#[0-9]+ -/)
+        resolvedFilenames = []
+        filenames.each do |filename|
+            out = `cd #{root} && p4 where #{filename[0]} | cut -f3 -d' '`
+            resolvedFilenames.push(out.gsub(/\n/, ''))
+        end
+        openedNum = p4open(resolvedFilenames, prompt)
+        @lastAction = "opened #{openedNum} files"
+    when :add
+      addedfileNum=changeFileChangelist changenum, root, prompt
+      @lastAction = "added #{addedfileNum} files"
     when :diff
       p4diff (p4getdiffs changenum, output), prompt
+      @lastAction = 'diff\'ed'
+    when :submit
+      @lastAction=`p4 submit -c #{changenum}`
+      return false
+    when :editchange
+      @lastAction=`p4 change #{changenum}`
+    when :shelve
+      @lastAction=`p4 shelve -c #{changenum}`
+    when :deleteshelve
+      @lastAction=`p4 shelve -d -c #{changenum}`
+    when :shebang
+      cmd=prompt.ask("!")
+      @lastAction=`#{cmd}`
     when :quit
-      puts "Leave #{changenum}"
-      break
+      @lastAction=''
+      return false
     else
-      puts "Leave #{changenum}"
-      break
     end
-  end
-#rescue Exception
-#  puts "Leave #{changeListNum}"
-#end
-#end
+    return true
+end
+
+def clearScreen()
+    puts "\e[H\e[2J"
+end
+
+def p4desc(changenum, prompt, reader, root)
+  while true
+    catch :ctrl_c do begin
+        clearScreen
+        unless @lastAction.empty?
+            puts @lastAction
+        end
+        spinner = TTY::Spinner.new("[:spinner] Getting desc...", format: :pulse_2)
+        spinner.auto_spin()
+        raise 'Empty string passed' if changenum.empty?
+        raise 'Change # not a number' if changenum =~ /\D/
+        `mkdir -p #{@tmpdir}/#{changenum}`
+        coloutput, _ = getChangeDesc(changenum)
+        spinner.stop("done!")
+        puts "#{coloutput}"
+
+        continue = true
+        Dir.chdir(root) do # Useful with tmux splitting
+            continue = workspaceActions(changenum, root, prompt)
+        end
+        unless continue
+            puts "Leave #{changenum}"
+            return
+        end
+    rescue TTY::Reader::InputInterrupt
+    rescue Exception => e
+        @lastAction=e.inspect
+        puts "Leave #{changenum}"
+        return
+    end
+end
+end
 end
