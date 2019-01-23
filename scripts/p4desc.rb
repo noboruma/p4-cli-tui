@@ -30,7 +30,7 @@ def p4diff(downloaded_filenames, prompt)
         chosen_paths.push value
     end
   else
-    choices = prompt.multi_select("Choose between:") do |menu|
+    choices = prompt.multi_select("Choose between:", filter: true) do |menu|
       if downloaded_filenames.length == 1
         menu.default 1
       end
@@ -57,7 +57,7 @@ def p4open(filenames, prompt)
         chosen_paths.push value
     end
   else
-    choices = prompt.multi_select("Choose between:") do |menu|
+    choices = prompt.multi_select("Choose between:", filter: true) do |menu|
       if filenames.length == 1
         menu.default 1
       end
@@ -87,7 +87,7 @@ def getChangeDesc(changenum)
     return colour, raw
 end
 
-def changeFileChangelist(changenum, root, prompt)
+def addFileChangelist(changenum, root, prompt)
   raw=`cd #{root} && p4 opened`
   rawlines=raw.scan(/^.*$/)
   lines = []
@@ -111,15 +111,41 @@ def changeFileChangelist(changenum, root, prompt)
   return choices.length
 end
 
+def removeFileChangelist(changenum, root, prompt)
+  raw=`cd #{root} && p4 opened`
+  rawlines=raw.scan(/^.*$/)
+  lines = []
+  rawlines.each do |line|
+    if line !~ /^((?!#{changenum}).)*$/
+       lines.push line
+    end
+  end
+  choices = prompt.multi_select("Files to remove:", per_page: 15) do |menu|
+    if lines.length == 1
+      menu.default 1
+    end
+    lines.each do |line|
+      filename=line.scan(/(.*)#[0-9]+ -/)
+      menu.choice name:line, value:filename[0]
+    end
+  end
+  choices.each do |file|
+    `cd #{root} && p4 reopen -c default #{file[0]}`
+  end
+  return choices.length
+end
+
 def workspaceActions(changenum, root, prompt)
     choices = [
         { key: 'e', name: 'edit files', value: :edit },
         { key: 'a', name: 'add files', value: :add},
+        { key: 'r', name: 'remove files', value: :remove},
         { key: 's', name: 'shelve files', value: :shelve},
         { key: 'd', name: 'show diffs', value: :diff },
-        { key: 'D', name: 'delete shelved files', value: :deleteshelved},
+        { key: 'R', name: 'delete shelved files', value: :deleteshelved},
         { key: 'E', name: 'edit changelist', value: :editchange },
         { key: 'S', name: 'submit changelist', value: :submit },
+        { key: 'D', name: 'delete changelist', value: :delete },
         { key: '!', name: 'execute', value: :shebang},
         { key: 'q', name: 'quit', value: :quit }
     ]
@@ -137,8 +163,11 @@ def workspaceActions(changenum, root, prompt)
         openedNum = p4open(resolvedFilenames, prompt)
         @lastAction = "opened #{openedNum} files"
     when :add
-      addedfileNum=changeFileChangelist changenum, root, prompt
+      addedfileNum=addFileChangelist changenum, root, prompt
       @lastAction = "added #{addedfileNum} files"
+    when :remove
+      removedfileNum=removeFileChangelist changenum, root, prompt
+      @lastAction = "added #{removedfileNum} files"
     when :diff
       p4diff (p4getdiffs changenum, output), prompt
       @lastAction = 'diff\'ed'
@@ -151,6 +180,8 @@ def workspaceActions(changenum, root, prompt)
       @lastAction=`p4 shelve -c #{changenum}`
     when :deleteshelve
       @lastAction=`p4 shelve -d -c #{changenum}`
+    when :delete
+      @lastAction=`cd #{root} && p4 change -d #{changenum}`
     when :shebang
       cmd=prompt.ask("!")
       @lastAction=`#{cmd}`
