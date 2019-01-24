@@ -1,7 +1,5 @@
 require 'tty-prompt'
 prompt = TTY::Prompt.new
-require 'tty-reader'
-reader = TTY::Reader.new
 require 'tty-spinner'
 require 'colorize'
 
@@ -11,8 +9,8 @@ require 'colorize'
 
 require "#{File.dirname(__FILE__)}/p4desc"
 
-def open_description(changenum, prompt, reader, root)
-    p4desc(changenum, prompt, reader, root)
+def open_description(changenum, prompt, root)
+    p4desc(changenum, prompt, root)
 end
 
 def getWorkspaces(user)
@@ -78,7 +76,7 @@ while true
         else
             workspace = output.scan(/Change #{choice}.*@([^ ]*) /)
             root = workRoots[workspace.join('')]
-            open_description choice, prompt, reader, root
+            open_description choice, prompt, root
         end
     rescue TTY::Reader::InputInterrupt
         clearScreen

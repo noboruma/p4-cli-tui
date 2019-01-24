@@ -206,7 +206,7 @@ def clearScreen()
     puts "\e[H\e[2J"
 end
 
-def p4desc(changenum, prompt, reader, root)
+def p4desc(changenum, prompt, root)
   while true
     catch :ctrl_c do begin
         clearScreen
