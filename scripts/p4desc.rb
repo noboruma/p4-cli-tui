@@ -1,14 +1,23 @@
 require 'tty-progressbar'
 
 def p4getdiffs(changeListNum, desc)
+  pendingChange = false
+  if desc =~ /.*\*pending\*.*/
+    pendingChange = true
+  end
+
   tuple = Struct.new(:_1, :_2)
   spinner = TTY::Spinner.new("[:spinner] Getting diffs...", format: :pulse_2)
   spinner.auto_spin()
   filenames=desc.scan(/\.\.\. (.*#[0-9]+) .*/).flatten
-                               downloaded_filenames = Hash.new
+  downloaded_filenames = Hash.new
   filenames.each do |filename|
     escape_filename=filename.gsub(/\//,
                                   '')
+    if !pendingChange
+    filename=filename.gsub(/#[0-9]+/) {|match| match.gsub(/[0-9]+/) {|rev| (rev.to_i - 1).to_s}}
+    end
+
     escape_filename=escape_filename.gsub(/(\..*)#([0-9]+)/,
                                          '__\2\1')
     `p4 print -q #{filename} > "#{@tmpdir}/#{changeListNum}/.#{escape_filename}"`
@@ -74,7 +83,7 @@ def p4open(filenames, prompt)
 end
 
 def getChangeDesc(changenum)
-    raw=`p4 describe #{changenum}`
+    raw=`p4 describe -s #{changenum}`
     colour = raw.gsub(/ [0-9]+ /) {|match| match.cyan}
     colour = colour.gsub(/delete/) {|match| match.red}
     colour = colour.gsub(/edit/) {|match| match.green}
@@ -135,7 +144,7 @@ def removeFileChangelist(changenum, root, prompt)
   return choices.length
 end
 
-def workspaceActions(changenum, root, prompt)
+def workspaceActions(changenum, root, prompt, desc)
     choices = [
         { key: 'e', name: 'edit files', value: :edit },
         { key: 'a', name: 'add files', value: :add},
@@ -169,7 +178,7 @@ def workspaceActions(changenum, root, prompt)
       removedfileNum=removeFileChangelist changenum, root, prompt
       @lastAction = "added #{removedfileNum} files"
     when :diff
-      p4diff (p4getdiffs changenum, output), prompt
+      p4diff (p4getdiffs changenum, desc), prompt
       @lastAction = 'diff\'ed'
     when :submit
       @lastAction=`p4 submit -c #{changenum}`
@@ -209,13 +218,13 @@ def p4desc(changenum, prompt, reader, root)
         raise 'Empty string passed' if changenum.empty?
         raise 'Change # not a number' if changenum =~ /\D/
         `mkdir -p #{@tmpdir}/#{changenum}`
-        coloutput, _ = getChangeDesc(changenum)
+        coloutput, desc = getChangeDesc(changenum)
         spinner.stop("done!")
         puts "#{coloutput}"
 
         continue = true
         Dir.chdir(root) do # Useful with tmux splitting
-            continue = workspaceActions(changenum, root, prompt)
+            continue = workspaceActions(changenum, root, prompt, desc)
         end
         unless continue
             puts "Leave #{changenum}"

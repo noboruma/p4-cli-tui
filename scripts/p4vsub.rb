@@ -31,10 +31,9 @@ def clearScreen()
 end
 
 def getChangeList(user)
-    raw=`p4 changes -u #{user} -s pending | sort -k 6 -`
-    colour=raw.gsub(/by #{user}@#{user}\./,"at [")
-    colour=colour.gsub(/ \*pending\* /,"] ")
-    colour=colour.gsub(/\[.*\]/) {|match| match.red}
+    raw=`p4 changes -u #{user} -s submitted`
+    colour=raw.gsub(/by #{user}@#{user}\.([^ ]*)/) {|match| tmp = "[#{match}]".red}
+    colour=colour.gsub(/by #{user}@#{user}\./, "at ")
     colour=colour.gsub(/ [0-9]* /) {|match| match.cyan}
     colour=colour.gsub(/'.*'/) {|match| match.yellow}
     colour=`echo "#{colour}" | column -ts"'"`
@@ -59,27 +58,16 @@ while true
         changes=output.scan(/Change ([0-9]+) /)
         spinner.stop("#{changes.length} changes")
 
-        choice = prompt.enum_select("Changelist #", per_page: 30, filter: true) do |menu|
-            menu.default changes.length+1
+        choice = prompt.select("Changelist #", per_page: 10, filter: true) do |menu|
+            menu.default 1
             changes.zip(coloutput.scan(/^.*$/)).each do |value, name|
                 menu.choice name: name, value: value[0]
             end
-            menu.choice name: 'New changelist', value: :newchangelist
         end
 
-        if choice == :newchangelist
-            choice = prompt.select("workspace:", per_page: 30, filter: true) do |menu|
-                workRoots.each do |workspace, _ |
-                    menu.choice name: workspace, value: workspace
-                end
-            end
-            root = workRoots[choice]
-            system("cd #{root} && p4 change")
-        else
-            workspace = output.scan(/Change #{choice}.*@([^ ]*) /)
-            root = workRoots[workspace.join('')]
-            open_description choice, prompt, reader, root
-        end
+          workspace = output.scan(/Change #{choice}.*@([^ ]*) /)
+          root = workRoots[workspace.join('')]
+          open_description choice, prompt, reader, root
     rescue TTY::Reader::InputInterrupt
         clearScreen
     rescue Exception => e
