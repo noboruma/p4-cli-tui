@@ -16,10 +16,10 @@ The workflow shown below is:
 - Access the newly created pending change
 - List the possible actions for the selected change
 
-![img](https://github.com/noboruma/p4-cli-tui/wiki/screenshots/ttyrecord.gif)
+![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/ttyrecord.gif)
 
 Here are all the possible actions for a selected changelist:
-![img](https://github.com/noboruma/p4-cli-tui/wiki/screenshots/Screenshot_20190124_105032.png)
+![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/Screenshot_20190124_105032.png)
 
 ## Installation &amp; external tools
 
