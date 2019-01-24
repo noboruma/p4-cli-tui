@@ -2,7 +2,7 @@
 
 CLI (Command Line Interface) tools that mimics graphical **p4v** in terminal.
 
-##What is it?
+## What is it?
 
 **p4v** is very convenient when working with **perforce**. Sometimes GUI &amp; mouse are not an option! This is why **p4v-cli-tui** was developed.
 
@@ -16,7 +16,7 @@ The workflow shown below is:
 - Access the newly created pending change
 - List the possible actions for the selected change
 
-![img](https://github.com/noboruma/p4-cli-tui/wiki/screenshots/ttyrec.gif)
+![img](https://github.com/noboruma/p4-cli-tui/wiki/screenshots/ttyrecord.gif)
 
 Here are all the possible actions for a selected changelist:
 ![img](https://github.com/noboruma/p4-cli-tui/wiki/screenshots/Screenshot_20190124_105032.png)
