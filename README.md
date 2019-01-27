@@ -2,7 +2,7 @@
 
 **p4vtt** is a small set of CLI (Command Line Interface) tools that mimics graphical **p4v**, but in terminal.
 
-## Are p4 &amp; p4v not enough already?
+## Are **p4** &amp; **p4v** not enough already?
 
 **p4v** is very convenient when working with **perforce**. Sometimes GUI &amp; mouse are not an option! **p4** alone is very useful, but it does not provide facilities for diff'ing nor opening changelists' files quickly. This is why **p4vtt** was developed. Under the hood, **p4vtt** is using **p4**, but presents results and asks for input in a convenient way.
 
@@ -16,14 +16,14 @@ The workflow shown below is:
 - Access the newly created pending change
 - List the possible actions for the selected change
 
-You need to run:
-
-`$ ruby /path/to/repo/scripts/p4v.rb`
-
 ![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/ttyrecord.gif)
 
 Here are all the possible actions for a selected changelist:
 ![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/Screenshot_20190124_105032.png)
+
+To work on your pending changelists, you can run:
+
+`$ ruby /path/to/repo/scripts/p4v.rb`
 
 To get the same list, but for submitted changes, please run the `p4sub.rb` script instead:
 
@@ -33,17 +33,17 @@ To get the same list, but for submitted changes, please run the `p4sub.rb` scrip
 
 You need **p4** &amp; **ruby** (2.4.* preferred).
 The scripts can be retrieved by doing:
+
 `git clone https://github.com/noboruma/p4vtt`
 
-You will need all the gems listed in the Gemfile. You can either install them globally, from the cloned repository:
+You will need all the gems listed in the Gemfile. You can either install them globally, from the cloned repository via:
 
 `$ sudo bundle install`
 
-Or locally, again from the cloned repository:
+Or locally, again from the cloned repository via:
 
 `$ bundle install --path vendor/bundle`
 
-Note vendor/bundle lies inside the repository.
-
+(Note that vendor/bundle lies within the repository.)
 
 The scripts work great when combined with **tmux** &amp; **vim**.
