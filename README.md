@@ -1,10 +1,10 @@
-# p4v-cli-tui
+# p4vtt: Perforce/Helix Visual Terminal Tools
 
-CLI (Command Line Interface) tools that mimics graphical **p4v** in terminal.
+**p4vtt** is a small set of CLI (Command Line Interface) tools that mimics graphical **p4v**, but in terminal.
 
-## What is it?
+## Are p4 &amp; p4v not enough already?
 
-**p4v** is very convenient when working with **perforce**. Sometimes GUI &amp; mouse are not an option! This is why **p4v-cli-tui** was developed.
+**p4v** is very convenient when working with **perforce**. Sometimes GUI &amp; mouse are not an option! **p4** alone is very useful, but it does not provide facilities for diff'ing nor opening changelists' files quickly. This is why **p4vtt** was developed. Under the hood, **p4vtt** is using **p4**, but presents results and asks for input in a convenient way.
 
 The tools/scripts are written in ruby, they mostly fit my workflow but if you want/need to extend them, please feel free to reach me out.
 
