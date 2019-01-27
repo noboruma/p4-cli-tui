@@ -32,8 +32,7 @@ To get the same list, but for submitted changes, please run the `p4sub.rb` scrip
 ## Installation &amp; external tools
 
 You need **p4** &amp; **ruby** (2.4.* preferred).
-The scripts
-
+The scripts can be retrieved by doing:
 `git clone https://github.com/noboruma/p4vtt`
 
 You will need all the gems listed in the Gemfile. You can either install them globally, from the cloned repository:
