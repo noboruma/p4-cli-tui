@@ -16,13 +16,35 @@ The workflow shown below is:
 - Access the newly created pending change
 - List the possible actions for the selected change
 
+You need to run:
+
+`$ ruby /path/to/repo/scripts/p4v.rb`
+
 ![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/ttyrecord.gif)
 
 Here are all the possible actions for a selected changelist:
 ![img](https://github.com/noboruma/p4-cli-tui/blob/master/wiki/screenshots/Screenshot_20190124_105032.png)
 
+To get the same list, but for submitted changes, please run the `p4sub.rb` script instead:
+
+`$ ruby /path/to/repo/scripts/p4vsub.rb`
+
 ## Installation &amp; external tools
 
-The scripts work great with tmux &amp; vim.
+You need **p4** &amp; **ruby** (2.4.* preferred).
+The scripts
 
-You will need all the gems listed in the Gemfile. (work in progress to make that process automatic)
+`git clone https://github.com/noboruma/p4vtt`
+
+You will need all the gems listed in the Gemfile. You can either install them globally, from the cloned repository:
+
+`$ sudo bundle install`
+
+Or locally, again from the cloned repository:
+
+`$ bundle install --path vendor/bundle`
+
+Note vendor/bundle lies inside the repository.
+
+
+The scripts work great when combined with **tmux** &amp; **vim**.
