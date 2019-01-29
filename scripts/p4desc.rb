@@ -32,6 +32,7 @@ def p4getdiffs(changeListNum, desc)
 end
 
 def p4diff(downloaded_filenames, prompt)
+  return -1 unless downloaded_filenames.length != 0
   diffAll = prompt.yes?("Diff all? (#{downloaded_filenames.length} files)")
   chosen_paths = []
   if diffAll
@@ -56,9 +57,11 @@ def p4diff(downloaded_filenames, prompt)
     system("gvimdiff #{value._1} #{value._2} 1>/dev/null")
     bar.advance(1)
   end
+  return chosen_paths.length
 end
 
 def p4open(filenames, prompt)
+  return -1 unless downloaded_filenames.length != 0
   openAll = prompt.yes?("Open all? (#{filenames.length} files)")
   chosen_paths = []
   if openAll
@@ -105,6 +108,8 @@ def addFileChangelist(changenum, root, prompt)
        lines.push line
     end
   end
+  return -1 unless lines.length != 0
+
   choices = prompt.multi_select("Files to take:", per_page: 15) do |menu|
     if lines.length == 1
       menu.default 1
@@ -129,6 +134,7 @@ def removeFileChangelist(changenum, root, prompt)
        lines.push line
     end
   end
+  return -1 unless lines.length != 0
   choices = prompt.multi_select("Files to remove:", per_page: 15) do |menu|
     if lines.length == 1
       menu.default 1
@@ -169,19 +175,23 @@ def workspaceActions(changenum, root, prompt, desc)
             out = `cd #{root} && p4 where #{filename[0]} | cut -f3 -d' '`
             resolvedFilenames.push(out.gsub(/\n/, ''))
         end
-        openedNum = p4open(resolvedFilenames, prompt)
-        @lastAction = "opened #{openedNum} files"
+        openedNum   = p4open(resolvedFilenames, prompt)
+        @lastAction = "opened #{openedNum} files" unless openedNum == -1
+        @lastAction = "Nothing to open" unless openedNum != -1
     when :add
       addedfileNum=addFileChangelist changenum, root, prompt
-      @lastAction = "added #{addedfileNum} files"
+      @lastAction = "added #{addedfileNum} files" unless addedfileNum == -1
+      @lastAction = "No files to add" unless addedfileNum != -1
     when :remove
-      removedfileNum=removeFileChangelist changenum, root, prompt
-      @lastAction = "added #{removedfileNum} files"
+      removedfileNum = removeFileChangelist changenum, root, prompt
+      @lastAction    = "removed #{removedfileNum} files" unless removedfileNum == -1
+      @lastAction    = "No files to remove" unless addedfileNum != -1
     when :diff
-      p4diff (p4getdiffs changenum, desc), prompt
-      @lastAction = 'diff\'ed'
+      err         = p4diff (p4getdiffs changenum, desc), prompt
+      @lastAction = 'diff\'ed' unless err == -1
+      @lastAction = 'Nothing to diff' unless err != -1
     when :submit
-      @lastAction=`p4 submit -c #{changenum}`
+      @lastAction=`cd #{root} && p4 submit -c #{changenum}`
       return false
     when :editchange
       @lastAction=`p4 change #{changenum}`
