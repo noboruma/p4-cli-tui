@@ -1,19 +1,10 @@
-require 'tty-prompt'
-prompt = TTY::Prompt.new
-require 'tty-spinner'
-require 'colorize'
+module Submitted
 
-@user   = "#{ENV["USER"]}"
-@tmpdir = "/tmp/p4v"
-@lastAction = ''
-
-require "#{File.dirname(__FILE__)}/p4desc"
-
-def open_description(changenum, prompt, root)
+def self.open_description(changenum, prompt, root)
     p4desc(changenum, prompt, root)
 end
 
-def getWorkspaces(user)
+def self.getWorkspaces(user)
     workspacesRoots={}
     raw=`p4 workspaces -u #{user}`
     workspaces=raw.scan(/Client ([^ ]*) /)
@@ -24,11 +15,11 @@ def getWorkspaces(user)
     return workspacesRoots
 end
 
-def clearScreen()
+def self.clearScreen()
     puts "\e[H\e[2J"
 end
 
-def getChangeList(user)
+def self.getChangeList(user)
     raw=`p4 changes -u #{user} -s submitted`
     colour=raw.gsub(/by #{user}@#{user}\.([^ ]*)/) {|match| tmp = "[#{match}]".red}
     colour=colour.gsub(/by #{user}@#{user}\./, "at ")
@@ -38,25 +29,22 @@ def getChangeList(user)
     return colour, raw
 end
 
-trap("SIGINT") { throw :ctrl_c }
-
-clearScreen
-newUser = prompt.ask("username:", default: @user)
-@user = newUser
-while true
+def self.main (prompt, user)
+pursue = true
+while pursue
     catch :ctrl_c do begin
         clearScreen
-        unless @lastAction.empty?
-            puts @lastAction
+        unless $lastAction.empty?
+            puts $lastAction
         end
         spinner = TTY::Spinner.new("[:spinner] Getting list...", format: :pulse_2)
         spinner.auto_spin
-        workRoots=getWorkspaces @user
-        coloutput, output=getChangeList @user
+        workRoots=getWorkspaces user
+        coloutput, output=getChangeList user
         changes=output.scan(/Change ([0-9]+) /)
         spinner.stop("#{changes.length} changes")
 
-        choice = prompt.select("Changelist #", per_page: 10, filter: true) do |menu|
+        choice = prompt.select("Changelist #", per_page: 30, filter: true) do |menu|
             menu.default 1
             changes.zip(coloutput.scan(/^.*$/)).each do |value, name|
                 menu.choice name: name, value: value[0]
@@ -67,9 +55,12 @@ while true
           root = workRoots[workspace.join('')]
           open_description choice, prompt, root
     rescue TTY::Reader::InputInterrupt
-        clearScreen
+        pursue = false
     rescue Exception => e
-        @lastAction=e.inspect
+        $lastAction=e.inspect
     end
     end
+end
+end
+
 end

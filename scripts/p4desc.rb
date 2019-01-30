@@ -20,12 +20,12 @@ def p4getdiffs(changeListNum, desc)
 
     escape_filename=escape_filename.gsub(/(\..*)#([0-9]+)/,
                                          '__\2\1')
-    `p4 print -q #{filename} > "#{@tmpdir}/#{changeListNum}/.#{escape_filename}"`
+    `p4 print -q #{filename} > "#{$tmpdir}/#{changeListNum}/.#{escape_filename}"`
     crev_filename=filename.gsub(/#[0-9]+/,
                                 "@=#{changeListNum}")
-    `p4 print -q #{crev_filename} >  #{@tmpdir}/#{changeListNum}/#{escape_filename}`
-    downloaded_filenames[filename] = tuple.new("#{@tmpdir}/#{changeListNum}/#{escape_filename}",
-                                               "#{@tmpdir}/#{changeListNum}/.#{escape_filename}")
+    `p4 print -q #{crev_filename} >  #{$tmpdir}/#{changeListNum}/#{escape_filename}`
+    downloaded_filenames[filename] = tuple.new("#{$tmpdir}/#{changeListNum}/#{escape_filename}",
+                                               "#{$tmpdir}/#{changeListNum}/.#{escape_filename}")
   end
   spinner.stop("done!")
   return downloaded_filenames
@@ -176,36 +176,37 @@ def workspaceActions(changenum, root, prompt, desc)
             resolvedFilenames.push(out.gsub(/\n/, ''))
         end
         openedNum   = p4open(resolvedFilenames, prompt)
-        @lastAction = "opened #{openedNum} files" unless openedNum == -1
-        @lastAction = "Nothing to open" unless openedNum != -1
+        $lastAction = "opened #{openedNum} files" unless openedNum == -1
+        $lastAction = "Nothing to open" unless openedNum != -1
     when :add
       addedfileNum=addFileChangelist changenum, root, prompt
-      @lastAction = "added #{addedfileNum} files" unless addedfileNum == -1
-      @lastAction = "No files to add" unless addedfileNum != -1
+      $lastAction = "added #{addedfileNum} files" unless addedfileNum == -1
+      $lastAction = "No files to add" unless addedfileNum != -1
     when :remove
       removedfileNum = removeFileChangelist changenum, root, prompt
-      @lastAction    = "removed #{removedfileNum} files" unless removedfileNum == -1
-      @lastAction    = "No files to remove" unless addedfileNum != -1
+      $lastAction    = "removed #{removedfileNum} files" unless removedfileNum == -1
+      $lastAction    = "No files to remove" unless addedfileNum != -1
     when :diff
       err         = p4diff (p4getdiffs changenum, desc), prompt
-      @lastAction = 'diff\'ed' unless err == -1
-      @lastAction = 'Nothing to diff' unless err != -1
+      $lastAction = 'diff\'ed' unless err == -1
+      $lastAction = 'Nothing to diff' unless err != -1
     when :submit
-      @lastAction=`cd #{root} && p4 submit -c #{changenum}`
+      $lastAction=`cd #{root} && p4 submit -c #{changenum}`
       return false
     when :editchange
-      @lastAction=`p4 change #{changenum}`
+      system("cd #{root} && p4 change #{changenum}")
+      $lastAction="#{changenum} edited"
     when :shelve
-      @lastAction=`p4 shelve -c #{changenum}`
+      $lastAction=`cd #{root} && p4 shelve -c #{changenum}`
     when :deleteshelve
-      @lastAction=`p4 shelve -d -c #{changenum}`
+      $lastAction=`cd #{root} && p4 shelve -d -c #{changenum}`
     when :delete
-      @lastAction=`cd #{root} && p4 change -d #{changenum}`
+      $lastAction=`cd #{root} && p4 change -d #{changenum}`
     when :shebang
       cmd=prompt.ask("!")
-      @lastAction=`#{cmd}`
+      $lastAction=`#{cmd}`
     when :quit
-      @lastAction=''
+      $lastAction=''
       return false
     else
     end
@@ -220,14 +221,14 @@ def p4desc(changenum, prompt, root)
   while true
     catch :ctrl_c do begin
         clearScreen
-        unless @lastAction.empty?
-            puts @lastAction
+        unless $lastAction.empty?
+            puts $lastAction
         end
         spinner = TTY::Spinner.new("[:spinner] Getting desc...", format: :pulse_2)
         spinner.auto_spin()
         raise 'Empty string passed' if changenum.empty?
         raise 'Change # not a number' if changenum =~ /\D/
-        `mkdir -p #{@tmpdir}/#{changenum}`
+        `mkdir -p #{$tmpdir}/#{changenum}`
         coloutput, desc = getChangeDesc(changenum)
         spinner.stop("done!")
         puts "#{coloutput}"
@@ -242,7 +243,7 @@ def p4desc(changenum, prompt, root)
         end
     rescue TTY::Reader::InputInterrupt
     rescue Exception => e
-        @lastAction=e.inspect
+        $lastAction=e.inspect
         puts "Leave #{changenum}"
         return
     end
