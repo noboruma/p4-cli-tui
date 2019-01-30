@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 require 'tty-prompt'
 prompt = TTY::Prompt.new
 require 'tty-spinner'
