@@ -61,7 +61,7 @@ def p4diff(downloaded_filenames, prompt)
 end
 
 def p4open(filenames, prompt)
-  return -1 unless downloaded_filenames.length != 0
+  return -1 unless filenames.length != 0
   openAll = prompt.yes?("Open all? (#{filenames.length} files)")
   chosen_paths = []
   if openAll
@@ -191,17 +191,17 @@ def workspaceActions(changenum, root, prompt, desc)
       $lastAction = 'diff\'ed' unless err == -1
       $lastAction = 'Nothing to diff' unless err != -1
     when :submit
-      $lastAction=`cd #{root} && p4 submit -c #{changenum}`
+      $lastAction=`cd #{root} && p4 submit -c #{changenum} 2>&1`
       return false
     when :editchange
-      system("cd #{root} && p4 change #{changenum}")
+      system("cd #{root} && p4 change #{changenum} 2>&1")
       $lastAction="#{changenum} edited"
     when :shelve
-      $lastAction=`cd #{root} && p4 shelve -c #{changenum}`
+      $lastAction=`cd #{root} && p4 shelve -c #{changenum} 2>&1`
     when :deleteshelve
-      $lastAction=`cd #{root} && p4 shelve -d -c #{changenum}`
+      $lastAction=`cd #{root} && p4 shelve -d -c #{changenum} 2>&1`
     when :delete
-      $lastAction=`cd #{root} && p4 change -d #{changenum}`
+      $lastAction=`cd #{root} && p4 change -d #{changenum} 2>&1`
     when :shebang
       cmd=prompt.ask("!")
       $lastAction=`#{cmd}`
@@ -230,8 +230,10 @@ def p4desc(changenum, prompt, root)
         raise 'Change # not a number' if changenum =~ /\D/
         `mkdir -p #{$tmpdir}/#{changenum}`
         coloutput, desc = getChangeDesc(changenum)
+        resolveList=`p4 resolve -n`
         spinner.stop("done!")
         puts "#{coloutput}"
+        puts resolveList
 
         continue = true
         Dir.chdir(root) do # Useful with tmux splitting
